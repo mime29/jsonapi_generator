@@ -34,6 +34,7 @@ struct JsonApiRoot {
     links: Option<Map<String, Value>>,
     meta: Option<Map<String, Value>>,
     root_items: Option<Vec<JsonApiObject>>,
+    cardinality: JsonApiRelationType, //Used to define the endpoint one or toMany
 }
 
 impl JsonApiRoot {
@@ -43,6 +44,7 @@ impl JsonApiRoot {
             links: Some(Map::new()),
             meta: Some(Map::new()),
             root_items: None,
+            cardinality: JsonApiRelationType::ToMany,
         }
     }
 
@@ -69,14 +71,17 @@ impl JsonApiRoot {
     fn data(&self) -> Value {
         if let &Some(ref r_items) = &self.root_items {
             //TODO: Return vec of data if the endpoint is plural (ex: api/events)
-            if &r_items.len() == &1 {
-                println!("only one root item found");
-                let json_api_obj = r_items.first().unwrap().to_map();
-                return serde_json::to_value(json_api_obj).unwrap()
-            } else {
-                println!("many root items found");
-                let vec_of_json_obj = r_items.iter().map(|item| item.to_map()).collect::<Vec<_>>();
-                return serde_json::to_value(vec_of_json_obj).unwrap()
+            match &self.cardinality {
+                &JsonApiRelationType::ToOne => {
+                    println!("ToOne Cardinality for the endpoint");
+                    let json_api_obj = r_items.first().unwrap().to_map();
+                    return serde_json::to_value(json_api_obj).unwrap()
+                },
+                &JsonApiRelationType::ToMany => {
+                    println!("ToMany Cardinality for the endpoint");
+                    let vec_of_json_obj = r_items.iter().map(|item| item.to_map()).collect::<Vec<_>>();
+                    return serde_json::to_value(vec_of_json_obj).unwrap()
+                },
             }
         }
         return Map::new().into();
