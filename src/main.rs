@@ -85,21 +85,14 @@ impl JsonApiRoot {
 
     // We create a Set from a Vector to remove unique items
     // This uses Eq and Hash on JsonApiObject
-    fn build_unique_relationships(&self) -> Vec<&JsonApiObject> {
+    fn build_unique_relationships(&self) -> HashSet<&JsonApiObject> {
         let all_relationships = match self.root_items {
-            Some(ref items) => items.iter().map(|json_obj| {
-                if let &Some(ref relationships) = &json_obj.relationships {
-                    //We get all relationships of all root jsonApiObjects
-                    let rels = relationships.iter().map(|rel| rel.1).collect::<Vec<_>>().iter().flat_map(|item| *item).collect::<Vec<_>>();
-                    rels
-                } else {
-                    Vec::new()
-                }
-            }).collect(),
+            Some(ref rootitems) => rootitems.iter().flat_map(|item| match &item.relationships {
+                    &Some(ref rels) => rels.iter().flat_map(|rel| rel.1).collect(),
+                    &None => HashSet::new(),
+                }).collect(),
             None => HashSet::new(),
-        }.iter().flat_map(|item| *item).collect::<Vec<_>>();
-        //let flatten_relationships = all_relationships.iter().flat_map(|item| item).collect::<Vec<_>>();
-        //flatten_relationships
+        };
         all_relationships
     }
 
